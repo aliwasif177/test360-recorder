@@ -18,27 +18,26 @@ var testOpsUrls = {
 };
 
 function userSignIn() {
-  let formData = {
+  let fData = {
     email: "hammad.zubair@gmail.com",
     password: "Pak@1234",
   };
   $.ajax({
-    beforeSend: function () {
-      //   xhrObj.setRequestHeader("Content-Type", "application/json");
-      //   xhrObj.setRequestHeader("Accept", "application/json");
-    },
+    // beforeSend: function () {
+    //   xhrObj.setRequestHeader("Content-Type", "application/json");
+    //   xhrObj.setRequestHeader("Accept", "application/json");
+    // },
 
     type: "POST",
 
-    URL: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
+    url: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
 
-    data: formData,
-    // contentType: "application/x-www-form-urlencoded",
+    data: JSON.stringify(fData),
+    processData: false,
+    contentType: "application/json",
     success: function (result) {
       console.log(result);
       console.log(result.message);
-      // alert("Success : " + result.message);
-      localStorage.setItem("recToken", result.token);
       if (result.success == true) {
         console.log(result);
         $("#postResultDiv").html(
@@ -70,6 +69,7 @@ function userSignIn() {
 
 window.onload = function () {
   userSignIn();
+  console.log("hy");
 };
 
 // for Selenium IDE
@@ -576,9 +576,6 @@ function ajaxPostTestStep(formData, url) {
 
     type: "POST",
     contentType: "application/json",
-    headers: {
-      Authorization: `Bearer eyJhbGciOiJIUzI1NiJ9.eyJvcmdhbml6YXRpb25JZCI6MSwic3ViIjoiaGFtbWFkLnp1YmFpckBnbWFpbC5jb20iLCJleHAiOjE2MjY0NjY3NTIsInVzZXJJZCI6MSwiaWF0IjoxNjI2NDY2NDUyfQ.NhcKH9ImzXHPyoEMq6zh5ODeAiXf_jL6lH5BDx7aexk`,
-    },
 
     url: url,
     data: JSON.stringify(formData),
@@ -901,6 +898,7 @@ function loadScripts() {
       script.src = scriptNames[i];
       script.async = false; // This is required for synchronous execution
       script.onload = function () {
+        userSignIn();
         j++;
       };
       document.head.appendChild(script);
@@ -1695,17 +1693,24 @@ $(function () {
 });
 
 function refreshStatusBar() {
+  userSignIn();
   $.ajax({
     url: testOpsUrls.getUserInfo,
     type: "GET",
     success: function (data) {
+      console.log(data);
+      debugger;
       if (data.email) {
+        debugger;
         showBackupEnabledStatus();
       } else {
+        debugger;
         showBackupDisabledStatus();
       }
     },
-    error: function () {
+    error: function (err) {
+      console.log(err);
+      debugger;
       showBackupDisabledStatus();
     },
   });
