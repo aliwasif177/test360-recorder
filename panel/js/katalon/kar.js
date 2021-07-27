@@ -23,37 +23,24 @@ function userSignIn() {
     password: "Pak@1234",
   };
   $.ajax({
-    // beforeSend: function () {
-    //   xhrObj.setRequestHeader("Content-Type", "application/json");
-    //   xhrObj.setRequestHeader("Accept", "application/json");
-    // },
-
     type: "POST",
-
     url: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
-
     data: JSON.stringify(fData),
     processData: false,
     contentType: "application/json",
     success: function (result) {
       console.log(result);
+      localStorage.setItem("token", result.payload.token);
+      localStorage.setItem("userEmail", result.payload.email);
       console.log(result.message);
+      debugger;
       if (result.success == true) {
         console.log(result);
+        debugger;
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
         );
-
-        // var el1=formData['stepName']+"_olddiv";
-        // var el2=formData['stepName']+"_newdiv";
-        // var el3=formData['stepName']+"_dt";
-
-        // $('#'+el1).hide()
-        // $('#'+el2).show()
-        // $('#'+el3).html('&nbsp;' , result.message);
-
-        // TODO set time out and close the popup
         fetchSites();
       } else {
         $("#postResultDiv").html(result.message);
@@ -67,10 +54,44 @@ function userSignIn() {
   });
 }
 
-window.onload = function () {
-  userSignIn();
-  console.log("hy");
-};
+//get sites
+
+function userSignIn() {
+  let fData = {
+    email: "hammad.zubair@gmail.com",
+    password: "Pak@1234",
+  };
+  $.ajax({
+    type: "POST",
+    url: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
+    data: JSON.stringify(fData),
+    processData: false,
+    contentType: "application/json",
+    success: function (result) {
+      console.log(result);
+      localStorage.setItem("token", result.payload.token);
+      localStorage.setItem("userEmail", result.payload.email);
+      console.log(result.message);
+      debugger;
+      if (result.success == true) {
+        console.log(result);
+        debugger;
+        $("#postResultDiv").html(
+          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+            "Test case successfully saved! <br>"
+        );
+        fetchSites();
+      } else {
+        $("#postResultDiv").html(result.message);
+      }
+      console.log(result);
+    },
+    error: function (e) {
+      alert("Error! " + "Please make the right entries!");
+      console.log("ERROR: ", e);
+    },
+  });
+}
 
 // for Selenium IDE
 // function Log() {
@@ -1004,12 +1025,27 @@ function fetchSites() {
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/sites";
   var jsson = null;
   // Populate dropdown with list of provinces
-  $.getJSON(url, function (data) {
-    $.each(data, function (key, entry) {
-      siteDropdown.append(
-        $("<option></option>").attr("value", entry.siteId).text(entry.siteName)
-      );
-    });
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
+  $.getJSON({
+    url,
+    beforeSend: setRequestHeader,
+    success: function (data) {
+      debugger;
+      $.each(data.payload.siteList, function (key, entry) {
+        debugger;
+        siteDropdown.append(
+          $("<option></option>")
+            .attr("value", entry.siteId)
+            .text(entry.siteName)
+        );
+      });
+    },
   });
 }
 
@@ -1027,6 +1063,7 @@ function fetchSitesForGroupTest() {
   // Populate dropdown with list of provinces
   $.getJSON(url, function (data) {
     $.each(data, function (key, entry) {
+      debugger;
       siteDropdown.append(
         $("<option></option>").attr("value", entry.siteId).text(entry.siteName)
       );
