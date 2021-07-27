@@ -1107,15 +1107,27 @@ $("#select-site").change(function () {
   $("#select-test-case")
     .empty()
     .append(function () {
-      const urlTestCase = ":7080/site/" + siteId;
-      $.getJSON(urlTestCase, function (date) {
-        $.each(date, function (key, entry) {
-          testCaseDropDown.append(
-            $("<option></option>")
-              .attr("value", entry.testCaseId)
-              .text(entry.name)
-          );
-        });
+      const urlTestCase = `http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groups`;
+
+      function setRequestHeader(xhr) {
+        xhr.setRequestHeader(
+          "Authorization",
+          `Bearer ${localStorage.getItem("token")}`
+        );
+      }
+      $.getJSON({
+        url: urlTestCase,
+        beforeSend: setRequestHeader,
+        success: function (date) {
+          $.each(date.payload.groupsList, function (key, entry) {
+            debugger;
+            testCaseDropDown.append(
+              $("<option></option>")
+                .attr("value", entry.groupId)
+                .text(entry.groupName)
+            );
+          });
+        },
       });
     });
 });
