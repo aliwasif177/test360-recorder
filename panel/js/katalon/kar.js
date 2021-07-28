@@ -33,10 +33,10 @@ function userSignIn() {
       localStorage.setItem("token", result.payload.token);
       localStorage.setItem("userEmail", result.payload.email);
       console.log(result.message);
-      debugger;
+
       if (result.success == true) {
         console.log(result);
-        debugger;
+
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
@@ -72,10 +72,10 @@ function userSignIn() {
       localStorage.setItem("token", result.payload.token);
       localStorage.setItem("userEmail", result.payload.email);
       console.log(result.message);
-      debugger;
+
       if (result.success == true) {
         console.log(result);
-        debugger;
+
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
@@ -1036,9 +1036,7 @@ function fetchSites() {
     url,
     beforeSend: setRequestHeader,
     success: function (data) {
-      debugger;
       $.each(data.payload.siteList, function (key, entry) {
-        debugger;
         siteDropdown.append(
           $("<option></option>")
             .attr("value", entry.siteId)
@@ -1063,7 +1061,6 @@ function fetchSitesForGroupTest() {
   // Populate dropdown with list of provinces
   $.getJSON(url, function (data) {
     $.each(data, function (key, entry) {
-      debugger;
       siteDropdown.append(
         $("<option></option>").attr("value", entry.siteId).text(entry.siteName)
       );
@@ -1100,14 +1097,30 @@ function openTestGroupDailogue() {
   inputGrouptestName.empty();
 }
 // Module Drop down
-$("#select-site").change(function () {
-  var siteId = $("#select-site").val();
+$("#select-site").change(function (e) {
+  var siteName = e.target;
+  debugger;
+  // var siteNamee = e.target.text;
+  var siteID = e.target.value;
+  debugger;
   let testCaseDropDown = $("#select-test-case");
 
   $("#select-test-case")
     .empty()
     .append(function () {
-      const urlTestCase = `http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groups`;
+      let payload = {
+        pageNo: 0,
+        pageSize: 20,
+        sortBy: "",
+        sortDirection: "",
+        searchParams: {
+          projectName: "",
+          testCaseName: "",
+          emailList: "",
+          smsListName: "",
+        },
+      };
+      const urlTestCase = `http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groups/paginated`;
 
       function setRequestHeader(xhr) {
         xhr.setRequestHeader(
@@ -1115,19 +1128,24 @@ $("#select-site").change(function () {
           `Bearer ${localStorage.getItem("token")}`
         );
       }
-      $.getJSON({
+
+      $.ajax({
+        type: "POST",
         url: urlTestCase,
+        data: JSON.stringify(payload),
+        processData: false,
+        contentType: "application/json",
         beforeSend: setRequestHeader,
         success: function (date) {
-          $.each(date.payload.groupsList, function (key, entry) {
-            debugger;
+          $.each(date.payload, function (key, entry) {
             testCaseDropDown.append(
-              $("<option></option>")
-                .attr("value", entry.groupId)
-                .text(entry.groupName)
+              $("<option>Choose group</option>")
+                .attr("value", entry.siteGroupId)
+                .text(entry.siteGroupName)
             );
           });
         },
+        dataType: "json",
       });
     });
 });
@@ -1743,26 +1761,22 @@ $(function () {
 
 function refreshStatusBar() {
   userSignIn();
-  $.ajax({
-    url: testOpsUrls.getUserInfo,
-    type: "GET",
-    success: function (data) {
-      console.log(data);
-      debugger;
-      if (data.email) {
-        debugger;
-        showBackupEnabledStatus();
-      } else {
-        debugger;
-        showBackupDisabledStatus();
-      }
-    },
-    error: function (err) {
-      console.log(err);
-      debugger;
-      showBackupDisabledStatus();
-    },
-  });
+  // $.ajax({
+  //   url: testOpsUrls.getUserInfo,
+  //   type: "GET",
+  //   success: function (data) {
+  //     console.log(data);
+  //     if (data.email) {
+  //       showBackupEnabledStatus();
+  //     } else {
+  //       showBackupDisabledStatus();
+  //     }
+  //   },
+  //   error: function (err) {
+  //     console.log(err);
+  //     showBackupDisabledStatus();
+  //   },
+  // });
 }
 
 $(refreshStatusBar);
