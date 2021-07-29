@@ -590,11 +590,6 @@ function ajaxPost(testCaseSelected, testName, content) {
 
 function ajaxPostTestStep(formData, url) {
   $.ajax({
-    beforeSend: function (xhrObj) {
-      xhrObj.setRequestHeader("Content-Type", "application/json");
-      xhrObj.setRequestHeader("Accept", "application/json");
-    },
-
     type: "POST",
     contentType: "application/json",
 
@@ -608,16 +603,6 @@ function ajaxPostTestStep(formData, url) {
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
         );
-
-        // var el1=formData['stepName']+"_olddiv";
-        // var el2=formData['stepName']+"_newdiv";
-        // var el3=formData['stepName']+"_dt";
-
-        // $('#'+el1).hide()
-        // $('#'+el2).show()
-        // $('#'+el3).html('&nbsp;' , result.message);
-
-        // TODO set time out and close the popup
         fetchSites();
       } else {
         $("#postResultDiv").html(result.message);
@@ -694,17 +679,17 @@ $(function () {
 // DK, block for populating Save and close button on site, test case, and step name div
 // DK, saving Group test to server
 function createGroupTest() {
-  var grouptestSelectSite = $("#grouptest-select-site").val();
-  var inputGrouptestName = $("#input-grouptest-name").val();
-
   var testGroupRequest = {
-    siteId: grouptestSelectSite,
-    name: inputGrouptestName,
+    testName: $("#input-grouptest-name").val(),
+    emailAddressListId: $("#select-site:selected").val().emailId,
+    smsAlertListId: $("#select-site:selected").val().smsId,
   };
+  debugger;
+
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groupTestCase";
 
-  ajaxPostTestStep(testGroupRequest, url);
+  ajaxPostTestStep(JSON.stringify(testGroupRequest), url);
   // $("#generateToScriptsDialog").dialog("close");
 }
 
@@ -716,7 +701,7 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      "Save ": exportToServer,
+      "Save ": createGroupTest,
       Close: function () {
         $("#generateToScriptsDialog").dialog("close");
         $(this).dialog("close");
@@ -761,7 +746,7 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      "Save ": createGroupTest,
+      Save: createGroupTest,
       Close: function () {
         // $( "#generateToScriptsDialog" ).dialog("close");
         $(this).dialog("close");
@@ -1039,7 +1024,10 @@ function fetchSites() {
       $.each(data.payload.siteList, function (key, entry) {
         siteDropdown.append(
           $("<option></option>")
-            .attr("value", entry.siteId)
+            .attr("value", {
+              emailId: entry.emailAddressListId,
+              smsId: entry.smsAlertListId,
+            })
             .text(entry.siteName)
         );
       });
@@ -1098,11 +1086,7 @@ function openTestGroupDailogue() {
 }
 // Module Drop down
 $("#select-site").change(function (e) {
-  var siteName = e.target;
-  debugger;
-  // var siteNamee = e.target.text;
-  var siteID = e.target.value;
-  debugger;
+  var siteName = $("#select-site :selected").text();
   let testCaseDropDown = $("#select-test-case");
 
   $("#select-test-case")
@@ -1114,7 +1098,7 @@ $("#select-site").change(function (e) {
         sortBy: "",
         sortDirection: "",
         searchParams: {
-          projectName: "",
+          projectName: siteName,
           testCaseName: "",
           emailList: "",
           smsListName: "",
@@ -1761,22 +1745,22 @@ $(function () {
 
 function refreshStatusBar() {
   userSignIn();
-  // $.ajax({
-  //   url: testOpsUrls.getUserInfo,
-  //   type: "GET",
-  //   success: function (data) {
-  //     console.log(data);
-  //     if (data.email) {
-  //       showBackupEnabledStatus();
-  //     } else {
-  //       showBackupDisabledStatus();
-  //     }
-  //   },
-  //   error: function (err) {
-  //     console.log(err);
-  //     showBackupDisabledStatus();
-  //   },
-  // });
+  $.ajax({
+    url: testOpsUrls.getUserInfo,
+    type: "GET",
+    success: function (data) {
+      console.log(data);
+      if (data.email) {
+        showBackupEnabledStatus();
+      } else {
+        showBackupDisabledStatus();
+      }
+    },
+    error: function (err) {
+      console.log(err);
+      showBackupDisabledStatus();
+    },
+  });
 }
 
 $(refreshStatusBar);
