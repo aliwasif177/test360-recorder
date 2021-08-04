@@ -2,6 +2,7 @@ var newFormatters = {};
 
 var dataFiles;
 var extensions;
+var siteName = null;
 
 var manifestData = chrome.runtime.getManifest();
 
@@ -16,6 +17,8 @@ var testOpsUrls = {
   uploadBackup: `${testOpsEndpoint}/api/v1/katalon-recorder/backup`,
   uploadTestReports: `${testOpsEndpoint}/api/v1/katalon-recorder/test-reports`,
 };
+
+let siteData = null;
 
 function userSignIn() {
   let fData = {
@@ -575,6 +578,7 @@ function saveToFile() {
 }
 // DK, collecting the testcaseid, testname and script
 function ajaxPost(testCaseSelected, testName, content) {
+  debugger;
   var paramData = {
     stepName: testName,
     testScript: content,
@@ -681,11 +685,9 @@ $(function () {
 function createGroupTest() {
   var testGroupRequest = {
     testName: $("#input-grouptest-name").val(),
-    emailAddressListId: $("#select-site:selected").val().emailId,
-    smsAlertListId: $("#select-site:selected").val().smsId,
+    emailAddressListId: siteName.split("sms:")[0],
+    smsAlertListId: siteName.split("sms:")[1],
   };
-  debugger;
-
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groupTestCase";
 
@@ -701,7 +703,7 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      "Save ": createGroupTest,
+      Save: createGroupTest,
       Close: function () {
         $("#generateToScriptsDialog").dialog("close");
         $(this).dialog("close");
@@ -723,7 +725,8 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      "Save ": createSite,
+      Save: createGroupTest,
+      // "Save ": createSite,
       Close: function () {
         // $( "#generateToScriptsDialog" ).dialog("close");
         $(this).dialog("close");
@@ -1023,11 +1026,17 @@ function fetchSites() {
     success: function (data) {
       $.each(data.payload.siteList, function (key, entry) {
         siteDropdown.append(
-          $("<option></option>")
-            .attr("value", {
-              emailId: entry.emailAddressListId,
-              smsId: entry.smsAlertListId,
-            })
+          $(
+            "<option value=" +
+              entry.emailAddressListId +
+              "sms:" +
+              entry.smsAlertListId +
+              "></option>"
+          )
+            .attr(
+              "value",
+              entry.emailAddressListId + "sms:" + entry.smsAlertListId
+            )
             .text(entry.siteName)
         );
       });
@@ -1086,8 +1095,12 @@ function openTestGroupDailogue() {
 }
 // Module Drop down
 $("#select-site").change(function (e) {
-  var siteName = $("#select-site :selected").text();
+  siteName = $("#select-site :selected").val();
   let testCaseDropDown = $("#select-test-case");
+
+  $("#select-test-case").change(function (e) {
+    siteName = $("#select-test-case :selected").val();
+  });
 
   $("#select-test-case")
     .empty()
@@ -1124,7 +1137,10 @@ $("#select-site").change(function (e) {
           $.each(date.payload, function (key, entry) {
             testCaseDropDown.append(
               $("<option>Choose group</option>")
-                .attr("value", entry.siteGroupId)
+                .attr(
+                  "value",
+                  entry.emailAddressListId + "sms:" + entry.smsAlertListId
+                )
                 .text(entry.siteGroupName)
             );
           });
