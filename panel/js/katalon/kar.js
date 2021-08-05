@@ -641,8 +641,6 @@ function ajaxPostTestStep(formData, url, testSteps) {
 
         // TODO set time out and close the popup
 
-        addTestCaseInGroup(groupId, result.payload.testCaseId);
-
         if (testSteps) {
           addTestCaseInGroup(groupId, result.payload.testCaseId);
           posttestStepOftest(testSteps, result);
@@ -709,40 +707,6 @@ function ajaxPostTestStep(formData, url, testSteps) {
   });
 }
 
-function addTestCaseInGroup(groupId, testId) {
-  function setRequestHeader(xhr) {
-    xhr.setRequestHeader(
-      "Authorization",
-      `Bearer ${localStorage.getItem("token")}`
-    );
-  }
-
-  debugger;
-
-  $.ajax({
-    type: "POST",
-    contentType: "application/json",
-    url: `http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groups/${groupId}/testcases/${testId}`,
-    beforeSend: setRequestHeader,
-    success: function (result) {
-      // alert("Success : " + result.message);
-      if (result.success == true) {
-        $("#postResultDiv").html(
-          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
-            "test case succesfully saved to selected Group saved! <br>"
-        );
-      } else {
-        $("#postResultDiv").html(result.message);
-      }
-      console.log(result);
-    },
-    error: function (e) {
-      alert("Error! " + "Please make the right entries!");
-      console.log("ERROR: ", e);
-    },
-  });
-}
-
 function posttestStepOftest(testSteps, testResult) {
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcasesteps";
@@ -784,6 +748,7 @@ function posttestStepOftest(testSteps, testResult) {
       success: function (result) {
         // alert("Success : " + result.message);
         if (result.status === "OK") {
+          addTestCaseInGroup(groupId, testResult.payload.testCaseId);
           $("#postResultDiv").html(
             "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
               "Test case steps successfully saved! <br>"
@@ -801,6 +766,40 @@ function posttestStepOftest(testSteps, testResult) {
   });
 }
 
+function addTestCaseInGroup(groupId, testId) {
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
+  debugger;
+
+  $.ajax({
+    type: "POST",
+    contentType: "application/json",
+    url: `http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groups/${groupId}/testcases/${testId}`,
+    beforeSend: setRequestHeader,
+    success: function (result) {
+      // alert("Success : " + result.message);
+      if (result.success == true) {
+        $("#postResultDiv").html(
+          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+            "test case succesfully saved to selected Group saved! <br>"
+        );
+      } else {
+        $("#postResultDiv").html(result.message);
+      }
+      console.log(result);
+    },
+    error: function (e) {
+      alert("Error! " + "Please make the right entries!");
+      console.log("ERROR: ", e);
+    },
+  });
+}
+
 function exportToServer() {
   var siteselected = $("#select-site").val();
   var testCaseSelected = $("#select-test-case").val();
@@ -815,7 +814,6 @@ function exportToServer() {
     emailAddressListId: testCaseSelected.split("sms:")[0],
     smsAlertListId: testCaseSelected.split("sms:")[1],
   };
-  groupId = testCaseSelected.split("sms:")[2];
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
 
