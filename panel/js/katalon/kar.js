@@ -71,7 +71,7 @@ function userSignIn() {
       localStorage.setItem("userEmail", result.payload.email);
       console.log(result.message);
 
-      if (result.success == true) {
+      if (result.status == "ok") {
         console.log(result);
 
         $("#postResultDiv").html(
@@ -575,7 +575,7 @@ function ajaxPostTestStep(formData, url, testSteps) {
     data: JSON.stringify(formData),
     success: function (result) {
       // alert("Success : " + result.message);
-      if (result.success == true) {
+      if (result.status == "OK") {
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
@@ -591,8 +591,14 @@ function ajaxPostTestStep(formData, url, testSteps) {
 
         // TODO set time out and close the popup
 
+        debugger;
+
         if (testSteps) {
+          debugger;
+          addTestCaseInGroup(groupId, result.payload.testCaseId);
+          posttestStepOftest(testSteps, result);
         }
+        debugger;
 
         fetchSites();
       } else {
@@ -641,7 +647,9 @@ function ajaxPostTestStep(formData, url, testSteps) {
 
         // TODO set time out and close the popup
 
+        debugger;
         if (testSteps) {
+          debugger;
           addTestCaseInGroup(groupId, result.payload.testCaseId);
           posttestStepOftest(testSteps, result);
         }
@@ -675,7 +683,7 @@ function ajaxPostTestStep(formData, url, testSteps) {
     data: JSON.stringify(formData),
     success: function (result) {
       // alert("Success : " + result.message);
-      if (result.success == true) {
+      if (result.status == "OK") {
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
@@ -690,8 +698,12 @@ function ajaxPostTestStep(formData, url, testSteps) {
         // $('#'+el3).html('&nbsp;' , result.message);
 
         // TODO set time out and close the popup
-
+        debugger;
         if (testSteps) {
+          debugger;
+
+          posttestStepOftest(testSteps, result);
+          addTestCaseInGroup(groupId, result.payload.testCaseId);
         }
 
         fetchSites();
@@ -783,7 +795,7 @@ function addTestCaseInGroup(groupId, testId) {
     beforeSend: setRequestHeader,
     success: function (result) {
       // alert("Success : " + result.message);
-      if (result.success == true) {
+      if (result.status == "OK") {
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "test case succesfully saved to selected Group saved! <br>"
@@ -814,8 +826,10 @@ function exportToServer() {
     emailAddressListId: testCaseSelected.split("sms:")[0],
     smsAlertListId: testCaseSelected.split("sms:")[1],
   };
+  groupId = testCaseSelected.split("sms:")[2];
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
+  debugger;
 
   ajaxPostTestStep(testStepRequestBody, url, content);
 
