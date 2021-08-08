@@ -54,10 +54,27 @@ function parseSuiteName(test_suite) {
   return suiteName;
 }
 
+//interceptor
+
+$(document).ajaxError(function (event, jqxhr, settings, thrownError) {
+  // let code = request.statusCode();
+  // console.log(code);
+  if (jqxhr.status == "400") {
+    localStorage.clear();
+
+    let theDialog = $("#generateToProjectDialogue").dialog();
+    theDialog.dialog("close");
+    let login = $("#360-loginForm").dialog();
+    login.dialog("open");
+  }
+  debugger;
+  $(".log").text("Triggered ajaxError handler.");
+});
+
 function userSignIn() {
   let fData = {
-    email: "hammad.zubair@gmail.com",
-    password: "Pak@1234",
+    email: $("#360-email").val(),
+    password: $("#360-password").val(),
   };
   $.ajax({
     type: "POST",
@@ -67,18 +84,24 @@ function userSignIn() {
     contentType: "application/json",
     success: function (result) {
       console.log(result);
-      localStorage.setItem("token", result.payload.token);
-      localStorage.setItem("userEmail", result.payload.email);
+
       console.log(result.message);
 
-      if (result.status == "ok") {
+      if (result.status === "OK") {
+        localStorage.setItem("token", result.payload.token);
+        localStorage.setItem("userEmail", result.payload.email);
         console.log(result);
 
-        $("#postResultDiv").html(
-          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
-            "Test case successfully saved! <br>"
-        );
-        fetchSites();
+        setTimeout(() => {
+          $("#360-auth-postResultDiv").html(
+            "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+              "SuccessFully sign in! <br> Redirecting to export page"
+          );
+
+          handleGenerateToScript();
+          $("#360-loginForm").dialog("close");
+          addExportDailouge();
+        }, 3000);
       } else {
         $("#postResultDiv").html(result.message);
       }
@@ -500,8 +523,10 @@ $(function () {
           selectInput.val(language);
         }
         //DK, function to populate the Site, testcases and test case name fields
-        fetchSites();
-        handleGenerateToScript();
+        debugger;
+        localStorage.getItem("token")
+          ? addExportDailouge()
+          : addSigninDialouge();
       });
   });
 
@@ -509,6 +534,27 @@ $(function () {
     handleGenerateToScript();
     saveSetting();
   });
+});
+
+function addSigninDialouge() {
+  let theDialog = $("#360-loginForm").dialog();
+  theDialog.dialog("open");
+}
+
+function addExportDailouge() {
+  let theDialog = $("#generateToProjectDialogue").dialog();
+  theDialog.dialog("open");
+}
+
+// $("#generateToProjectDialogue").dialog({
+//   open: function (event, ui) {
+//     debugger;
+//     fetchSites();
+//   },
+// });
+$("#generateToProjectDialogue").on("dialogopen", function (event, ui) {
+  debugger;
+  fetchSites();
 });
 
 function handleGenerateToScript() {
@@ -591,15 +637,10 @@ function ajaxPostTestStep(formData, url, testSteps) {
 
         // TODO set time out and close the popup
 
-        debugger;
-
         if (testSteps) {
-          debugger;
           addTestCaseInGroup(groupId, result.payload.testCaseId);
           posttestStepOftest(testSteps, result);
         }
-        debugger;
-
         fetchSites();
       } else {
         $("#postResultDiv").html(result.message);
@@ -647,9 +688,7 @@ function ajaxPostTestStep(formData, url, testSteps) {
 
         // TODO set time out and close the popup
 
-        debugger;
         if (testSteps) {
-          debugger;
           addTestCaseInGroup(groupId, result.payload.testCaseId);
           posttestStepOftest(testSteps, result);
         }
@@ -698,10 +737,7 @@ function ajaxPostTestStep(formData, url, testSteps) {
         // $('#'+el3).html('&nbsp;' , result.message);
 
         // TODO set time out and close the popup
-        debugger;
         if (testSteps) {
-          debugger;
-
           posttestStepOftest(testSteps, result);
           addTestCaseInGroup(groupId, result.payload.testCaseId);
         }
@@ -733,48 +769,49 @@ function posttestStepOftest(testSteps, testResult) {
   let splitTests = testSteps.split("\n");
 
   splitTests.map((steps, index) => {
-    let params = new FormData();
+    if (index < splitTests.length - 1) {
+      let params = new FormData();
 
-    params.append("file", null);
-    params.append(
-      "testCaseStep",
-      new Blob(
-        [
-          JSON.stringify({
-            testCaseId: testResult.payload.testCaseId,
-            command: steps,
-          }),
-        ],
-        {
-          type: "application/json",
-        }
-      )
-    );
-    $.ajax({
-      type: "POST",
-      url: url,
-      beforeSend: setRequestHeader,
-      data: params,
-      processData: false,
-      contentType: false,
-      success: function (result) {
-        // alert("Success : " + result.message);
-        if (result.status === "OK") {
-          addTestCaseInGroup(groupId, testResult.payload.testCaseId);
-          $("#postResultDiv").html(
-            "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
-              "Test case steps successfully saved! <br>"
-          );
-        } else {
-          $("#postResultDiv").html(result.message);
-        }
-        console.log(result);
-      },
-      error: function (e) {
-        alert("Error! " + "Please make the right entries!");
-        console.log("ERROR: ", e);
-      },
-    });
+      params.append("file", null);
+      params.append(
+        "testCaseStep",
+        new Blob(
+          [
+            JSON.stringify({
+              testCaseId: testResult.payload.testCaseId,
+              command: steps,
+            }),
+          ],
+          {
+            type: "application/json",
+          }
+        )
+      );
+      $.ajax({
+        type: "POST",
+        url: url,
+        beforeSend: setRequestHeader,
+        data: params,
+        processData: false,
+        contentType: false,
+        success: function (result) {
+          // alert("Success : " + result.message);
+          if (result.status === "OK") {
+            $("#postResultDiv").html(
+              "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+                "Test case steps successfully saved! <br>"
+            );
+          } else {
+            $("#postResultDiv").html(result.message);
+          }
+          console.log(result);
+        },
+        error: function (e) {
+          alert("Error! " + "Please make the right entries!");
+          console.log("ERROR: ", e);
+        },
+      });
+    }
   });
 }
 
@@ -785,8 +822,6 @@ function addTestCaseInGroup(groupId, testId) {
       `Bearer ${localStorage.getItem("token")}`
     );
   }
-
-  debugger;
 
   $.ajax({
     type: "POST",
@@ -829,8 +864,6 @@ function exportToServer() {
   groupId = testCaseSelected.split("sms:")[2];
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
-  debugger;
-
   ajaxPostTestStep(testStepRequestBody, url, content);
 
   $("#generateToScriptsDialog").dialog("close");
@@ -911,6 +944,31 @@ $(function () {
     },
   });
 });
+
+//Authentication Dailouge
+
+$(function () {
+  var dialog = $("#360-loginForm");
+  dialog.dialog({
+    autoOpen: false,
+    modal: true,
+    height: 300,
+    width: "50%",
+    buttons: {
+      "Sign in ": userSignIn,
+      Close: function () {
+        $("#360-loginForm").dialog("close");
+        $(this).dialog("close");
+      },
+    },
+  });
+  dialog.dialog({
+    close: function () {
+      // _gaq.push(['_trackEvent', 'app', 'export-' + $("#select-script-language-id").val()]);
+    },
+  });
+});
+
 // site create dialogue function
 $(function () {
   var dialog = $("#generateSiteDialogue");
@@ -1188,13 +1246,10 @@ $(function () {
 
 // DK experiemental code block
 function fetchSites() {
+  $("#360-auth-postResultDiv").html("");
   $("#txt-script-id").hide();
   $("#select-script-language-id").hide();
   //.dailogue is a custome method
-  var theDialog = $("#generateToProjectDialogue").dialog();
-  theDialog.dialog("open");
-
-  //$("#generateToProjectDialogue").dialog("open");
   let siteDropdown = $("#select-site");
 
   siteDropdown.empty();
@@ -1217,6 +1272,8 @@ function fetchSites() {
     url,
     beforeSend: setRequestHeader,
     success: function (data) {
+      var theDialog = $("#generateToProjectDialogue").dialog();
+      theDialog.dialog("open");
       $.each(data.payload.siteList, function (key, entry) {
         siteDropdown.append(
           $(
@@ -1351,7 +1408,8 @@ function generateScripts(isExternalCapability, language, newFormatter) {
     cm.toTextArea();
   }
   $textarea.data("cm", null);
-  $("#generateToScriptsDialog").dialog("open");
+  debugger;
+  // $("#generateToScriptsDialog").dialog("open");
 
   if (isExternalCapability) {
     var option = $("#" + language);
@@ -1952,7 +2010,7 @@ $(function () {
 });
 
 function refreshStatusBar() {
-  userSignIn();
+  // userSignIn();
   $.ajax({
     url: testOpsUrls.getUserInfo,
     type: "GET",
