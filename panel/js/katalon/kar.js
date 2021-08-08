@@ -2,7 +2,9 @@ var newFormatters = {};
 
 var dataFiles;
 var extensions;
+
 var groupId = "";
+
 
 var manifestData = chrome.runtime.getManifest();
 
@@ -526,6 +528,7 @@ $(function () {
         localStorage.getItem("token")
           ? addExportDailouge()
           : addSigninDialouge();
+
       });
   });
 
@@ -598,10 +601,12 @@ function ajaxPost(testCaseSelected, testName, content) {
   groupId = testCaseSelected.split("sms:")[2];
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
+
   ajaxPostTestStep(paramData, url);
 
   //   console.log(the_data);
   $("#generateToScriptsDialog").dialog("close");
+
 }
 
 function ajaxPostTestStep(formData, url, testSteps) {
@@ -722,10 +727,12 @@ function ajaxPostTestStep(formData, url, testSteps) {
     success: function (result) {
       // alert("Success : " + result.message);
       if (result.status == "OK") {
+
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
         );
+
 
         // var el1=formData['stepName']+"_olddiv";
         // var el2=formData['stepName']+"_newdiv";
@@ -752,6 +759,7 @@ function ajaxPostTestStep(formData, url, testSteps) {
       console.log("ERROR: ", e);
     },
   });
+
 }
 
 function posttestStepOftest(testSteps, testResult) {
@@ -856,6 +864,7 @@ function exportToServer() {
   var content = cm.getValue();
 
   var testStepRequestBody = {
+
     testName: testName,
     emailAddressListId: testCaseSelected.split("sms:")[0],
     smsAlertListId: testCaseSelected.split("sms:")[1],
@@ -864,6 +873,7 @@ function exportToServer() {
   var url =
     "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
   ajaxPostTestStep(testStepRequestBody, url, content);
+
 
   $("#generateToScriptsDialog").dialog("close");
 }
@@ -908,6 +918,7 @@ $(function () {
 // DK, block for populating Save and close button on site, test case, and step name div
 // DK, saving Group test to server
 function createGroupTest() {
+
   var grouptestSelectSite = $("#grouptest-select-site").val();
   var inputGrouptestName = $("#input-grouptest-name").val();
 
@@ -919,6 +930,7 @@ function createGroupTest() {
     "http://ec2-18-216-198-217.us-east-2.compute.amazonaws.com:8081/groupTestCase";
 
   ajaxPostTestStep(testGroupRequest, url);
+
   // $("#generateToScriptsDialog").dialog("close");
 }
 
@@ -931,6 +943,7 @@ $(function () {
     width: "90%",
     buttons: {
       "Save ": exportToServer,
+
       Close: function () {
         $("#generateToScriptsDialog").dialog("close");
         $(this).dialog("close");
@@ -942,6 +955,7 @@ $(function () {
       // _gaq.push(['_trackEvent', 'app', 'export-' + $("#select-script-language-id").val()]);
     },
   });
+
 });
 
 //Authentication Dailouge
@@ -978,6 +992,7 @@ $(function () {
     width: "90%",
     buttons: {
       "Save ": createSite,
+
       Close: function () {
         // $( "#generateToScriptsDialog" ).dialog("close");
         $(this).dialog("close");
@@ -1001,6 +1016,7 @@ $(function () {
     width: "90%",
     buttons: {
       "Save ": createGroupTest,
+
       Close: function () {
         // $( "#generateToScriptsDialog" ).dialog("close");
         $(this).dialog("close");
@@ -1158,6 +1174,7 @@ function loadScripts() {
       script.src = scriptNames[i];
       script.async = false; // This is required for synchronous execution
       script.onload = function () {
+
         j++;
       };
       document.head.appendChild(script);
@@ -1271,8 +1288,10 @@ function fetchSites() {
     url,
     beforeSend: setRequestHeader,
     success: function (data) {
+
       var theDialog = $("#generateToProjectDialogue").dialog();
       theDialog.dialog("open");
+
       $.each(data.payload.siteList, function (key, entry) {
         siteDropdown.append(
           $(
@@ -1300,8 +1319,7 @@ function fetchSitesForGroupTest() {
   siteDropdown.append('<option selected="true" disabled>Choose Site</option>');
   siteDropdown.prop("selectedIndex", 0);
 
-  const url =
-    "http://ec2-18-216-198-217.us-east-2.compute.amazonaws.com:8081/sites";
+  const url ="http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/sites";
 
   // Populate dropdown with list of provinces
   $.getJSON(url, function (data) {
@@ -1342,6 +1360,7 @@ function openTestGroupDailogue() {
   inputGrouptestName.empty();
 }
 // Module Drop down
+
 $("#select-site").change(function () {
   var siteId = $("#select-site").val();
   let testCaseDropDown = $("#select-test-case");
@@ -1407,8 +1426,6 @@ function generateScripts(isExternalCapability, language, newFormatter) {
     cm.toTextArea();
   }
   $textarea.data("cm", null);
-  debugger;
-  // $("#generateToScriptsDialog").dialog("open");
 
   if (isExternalCapability) {
     var option = $("#" + language);
@@ -2009,18 +2026,21 @@ $(function () {
 });
 
 function refreshStatusBar() {
-  // userSignIn();
+
   $.ajax({
     url: testOpsUrls.getUserInfo,
     type: "GET",
     success: function (data) {
+
       if (data.email) {
         showBackupEnabledStatus();
       } else {
         showBackupDisabledStatus();
       }
     },
-    error: function () {
+
+    error: function (err) {
+      console.log(err);
       showBackupDisabledStatus();
     },
   });
