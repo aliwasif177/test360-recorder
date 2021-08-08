@@ -97,8 +97,6 @@ function userSignIn() {
             "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
               "SuccessFully sign in! <br> Redirecting to export page"
           );
-
-          handleGenerateToScript();
           $("#360-loginForm").dialog("close");
           addExportDailouge();
         }, 3000);
@@ -518,6 +516,7 @@ $(function () {
             );
           }
         });
+        handleGenerateToScript();
         var option = selectInput.find("option[value=" + language + "]");
         if (option.length > 0) {
           selectInput.val(language);
