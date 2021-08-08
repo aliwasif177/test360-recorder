@@ -2,7 +2,9 @@ var newFormatters = {};
 
 var dataFiles;
 var extensions;
-var siteName = null;
+
+var groupId = "";
+
 
 var manifestData = chrome.runtime.getManifest();
 
@@ -17,84 +19,6 @@ var testOpsUrls = {
   uploadBackup: `${testOpsEndpoint}/api/v1/katalon-recorder/backup`,
   uploadTestReports: `${testOpsEndpoint}/api/v1/katalon-recorder/test-reports`,
 };
-
-let siteData = null;
-
-function userSignIn() {
-  let fData = {
-    email: "hammad.zubair@gmail.com",
-    password: "Pak@1234",
-  };
-  $.ajax({
-    type: "POST",
-    url: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
-    data: JSON.stringify(fData),
-    processData: false,
-    contentType: "application/json",
-    success: function (result) {
-      console.log(result);
-      localStorage.setItem("token", result.payload.token);
-      localStorage.setItem("userEmail", result.payload.email);
-      console.log(result.message);
-
-      if (result.success == true) {
-        console.log(result);
-
-        $("#postResultDiv").html(
-          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
-            "Test case successfully saved! <br>"
-        );
-        fetchSites();
-      } else {
-        $("#postResultDiv").html(result.message);
-      }
-      console.log(result);
-    },
-    error: function (e) {
-      alert("Error! " + "Please make the right entries!");
-      console.log("ERROR: ", e);
-    },
-  });
-}
-
-//get sites
-
-function userSignIn() {
-  let fData = {
-    email: "hammad.zubair@gmail.com",
-    password: "Pak@1234",
-  };
-  $.ajax({
-    type: "POST",
-    url: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
-    data: JSON.stringify(fData),
-    processData: false,
-    contentType: "application/json",
-    success: function (result) {
-      console.log(result);
-      localStorage.setItem("token", result.payload.token);
-      localStorage.setItem("userEmail", result.payload.email);
-      console.log(result.message);
-
-      if (result.success == true) {
-        console.log(result);
-
-        $("#postResultDiv").html(
-          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
-            "Test case successfully saved! <br>"
-        );
-        fetchSites();
-      } else {
-        $("#postResultDiv").html(result.message);
-      }
-      console.log(result);
-    },
-    error: function (e) {
-      alert("Error! " + "Please make the right entries!");
-      console.log("ERROR: ", e);
-    },
-  });
-}
 
 // for Selenium IDE
 // function Log() {
@@ -130,6 +54,64 @@ function parseSuiteName(test_suite) {
   var pattern = /<title>(.*)<\/title>/gi;
   var suiteName = pattern.exec(test_suite)[1];
   return suiteName;
+}
+
+//interceptor
+
+$(document).ajaxError(function (event, jqxhr, settings, thrownError) {
+  // let code = request.statusCode();
+  // console.log(code);
+  if (jqxhr.status == "400") {
+    localStorage.clear();
+
+    let theDialog = $("#generateToProjectDialogue").dialog();
+    theDialog.dialog("close");
+    let login = $("#360-loginForm").dialog();
+    login.dialog("open");
+  }
+  debugger;
+  $(".log").text("Triggered ajaxError handler.");
+});
+
+function userSignIn() {
+  let fData = {
+    email: $("#360-email").val(),
+    password: $("#360-password").val(),
+  };
+  $.ajax({
+    type: "POST",
+    url: "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/users/login",
+    data: JSON.stringify(fData),
+    processData: false,
+    contentType: "application/json",
+    success: function (result) {
+      console.log(result);
+
+      console.log(result.message);
+
+      if (result.status === "OK") {
+        localStorage.setItem("token", result.payload.token);
+        localStorage.setItem("userEmail", result.payload.email);
+        console.log(result);
+
+        setTimeout(() => {
+          $("#360-auth-postResultDiv").html(
+            "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+              "SuccessFully sign in! <br> Redirecting to export page"
+          );
+          $("#360-loginForm").dialog("close");
+          addExportDailouge();
+        }, 3000);
+      } else {
+        $("#postResultDiv").html(result.message);
+      }
+      console.log(result);
+    },
+    error: function (e) {
+      alert("Error! " + "Please make the right entries!");
+      console.log("ERROR: ", e);
+    },
+  });
 }
 
 // load test suite saved in storage upon starting
@@ -536,13 +518,17 @@ $(function () {
             );
           }
         });
+        handleGenerateToScript();
         var option = selectInput.find("option[value=" + language + "]");
         if (option.length > 0) {
           selectInput.val(language);
         }
         //DK, function to populate the Site, testcases and test case name fields
-        fetchSites();
-        handleGenerateToScript();
+        debugger;
+        localStorage.getItem("token")
+          ? addExportDailouge()
+          : addSigninDialouge();
+
       });
   });
 
@@ -550,6 +536,27 @@ $(function () {
     handleGenerateToScript();
     saveSetting();
   });
+});
+
+function addSigninDialouge() {
+  let theDialog = $("#360-loginForm").dialog();
+  theDialog.dialog("open");
+}
+
+function addExportDailouge() {
+  let theDialog = $("#generateToProjectDialogue").dialog();
+  theDialog.dialog("open");
+}
+
+// $("#generateToProjectDialogue").dialog({
+//   open: function (event, ui) {
+//     debugger;
+//     fetchSites();
+//   },
+// });
+$("#generateToProjectDialogue").on("dialogopen", function (event, ui) {
+  debugger;
+  fetchSites();
 });
 
 function handleGenerateToScript() {
@@ -578,35 +585,66 @@ function saveToFile() {
 }
 // DK, collecting the testcaseid, testname and script
 function ajaxPost(testCaseSelected, testName, content) {
-  debugger;
+  //  ;
+  // var paramData = {
+  //   stepName: testName,
+  //   testScript: content,
+  //   testCaseId: testCaseSelected,
+  // };
+  //
+
   var paramData = {
-    stepName: testName,
-    testScript: content,
-    testCaseId: testCaseSelected,
+    testName: testName,
+    emailAddressListId: testCaseSelected.split("sms:")[0],
+    smsAlertListId: testCaseSelected.split("sms:")[1],
   };
+  groupId = testCaseSelected.split("sms:")[2];
   var url =
-    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:8081/export";
+    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
+
   ajaxPostTestStep(paramData, url);
 
   //   console.log(the_data);
   $("#generateToScriptsDialog").dialog("close");
+
 }
 
-function ajaxPostTestStep(formData, url) {
+function ajaxPostTestStep(formData, url, testSteps) {
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
   $.ajax({
     type: "POST",
     contentType: "application/json",
-
     url: url,
+    beforeSend: setRequestHeader,
     data: JSON.stringify(formData),
-    contentType: "application/x-www-form-urlencoded",
     success: function (result) {
       // alert("Success : " + result.message);
-      if (result.success == true) {
+      if (result.status == "OK") {
         $("#postResultDiv").html(
           "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
             "Test case successfully saved! <br>"
         );
+
+        // var el1=formData['stepName']+"_olddiv";
+        // var el2=formData['stepName']+"_newdiv";
+        // var el3=formData['stepName']+"_dt";
+
+        // $('#'+el1).hide()
+        // $('#'+el2).show()
+        // $('#'+el3).html('&nbsp;' , result.message);
+
+        // TODO set time out and close the popup
+
+        if (testSteps) {
+          addTestCaseInGroup(groupId, result.payload.testCaseId);
+          posttestStepOftest(testSteps, result);
+        }
         fetchSites();
       } else {
         $("#postResultDiv").html(result.message);
@@ -619,6 +657,203 @@ function ajaxPostTestStep(formData, url) {
     },
   });
 }
+
+function ajaxPostTestStep(formData, url, testSteps) {
+  var url =
+    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
+  $.ajax({
+    type: "POST",
+    contentType: "application/json",
+    url: url,
+    beforeSend: setRequestHeader,
+    data: JSON.stringify(formData),
+    success: function (result) {
+      // alert("Success : " + result.message);
+      if (result.status === "OK") {
+        $("#postResultDiv").html(
+          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+            "Test case successfully saved! <br>"
+        );
+
+        // var el1=formData['stepName']+"_olddiv";
+        // var el2=formData['stepName']+"_newdiv";
+        // var el3=formData['stepName']+"_dt";
+
+        // $('#'+el1).hide()
+        // $('#'+el2).show()
+        // $('#'+el3).html('&nbsp;' , result.message);
+
+        // TODO set time out and close the popup
+
+        if (testSteps) {
+          addTestCaseInGroup(groupId, result.payload.testCaseId);
+          posttestStepOftest(testSteps, result);
+        }
+
+        fetchSites();
+      } else {
+        $("#postResultDiv").html(result.message);
+      }
+      console.log(result);
+    },
+    error: function (e) {
+      alert("Error! " + "Please make the right entries!");
+      console.log("ERROR: ", e);
+    },
+  });
+}
+
+function ajaxPostTestStep(formData, url, testSteps) {
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
+  $.ajax({
+    type: "POST",
+    contentType: "application/json",
+    url: url,
+    beforeSend: setRequestHeader,
+    data: JSON.stringify(formData),
+    success: function (result) {
+      // alert("Success : " + result.message);
+      if (result.status == "OK") {
+
+        $("#postResultDiv").html(
+          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+            "Test case successfully saved! <br>"
+        );
+
+
+        // var el1=formData['stepName']+"_olddiv";
+        // var el2=formData['stepName']+"_newdiv";
+        // var el3=formData['stepName']+"_dt";
+
+        // $('#'+el1).hide()
+        // $('#'+el2).show()
+        // $('#'+el3).html('&nbsp;' , result.message);
+
+        // TODO set time out and close the popup
+        if (testSteps) {
+          posttestStepOftest(testSteps, result);
+          addTestCaseInGroup(groupId, result.payload.testCaseId);
+        }
+
+        fetchSites();
+      } else {
+        $("#postResultDiv").html(result.message);
+      }
+      console.log(result);
+    },
+    error: function (e) {
+      alert("Error! " + "Please make the right entries!");
+      console.log("ERROR: ", e);
+    },
+  });
+
+}
+
+function posttestStepOftest(testSteps, testResult) {
+  var url =
+    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcasesteps";
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
+  console.log(testSteps);
+  let splitTests = testSteps.split("\n");
+
+  splitTests.map((steps, index) => {
+    if (index < splitTests.length - 1) {
+      let params = new FormData();
+
+      params.append("file", null);
+      params.append(
+        "testCaseStep",
+        new Blob(
+          [
+            JSON.stringify({
+              testCaseId: testResult.payload.testCaseId,
+              command: steps,
+            }),
+          ],
+          {
+            type: "application/json",
+          }
+        )
+      );
+      $.ajax({
+        type: "POST",
+        url: url,
+        beforeSend: setRequestHeader,
+        data: params,
+        processData: false,
+        contentType: false,
+        success: function (result) {
+          // alert("Success : " + result.message);
+          if (result.status === "OK") {
+            $("#postResultDiv").html(
+              "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+                "Test case steps successfully saved! <br>"
+            );
+          } else {
+            $("#postResultDiv").html(result.message);
+          }
+          console.log(result);
+        },
+        error: function (e) {
+          alert("Error! " + "Please make the right entries!");
+          console.log("ERROR: ", e);
+        },
+      });
+    }
+  });
+}
+
+function addTestCaseInGroup(groupId, testId) {
+  function setRequestHeader(xhr) {
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token")}`
+    );
+  }
+
+  $.ajax({
+    type: "POST",
+    contentType: "application/json",
+    url: `http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groups/${groupId}/testcases/${testId}`,
+    beforeSend: setRequestHeader,
+    success: function (result) {
+      // alert("Success : " + result.message);
+      if (result.status == "OK") {
+        $("#postResultDiv").html(
+          "<p style='background-color:#7FA7B0; color:white; padding:20px 20px 20px 20px'>" +
+            "test case succesfully saved to selected Group saved! <br>"
+        );
+      } else {
+        $("#postResultDiv").html(result.message);
+      }
+      console.log(result);
+    },
+    error: function (e) {
+      alert("Error! " + "Please make the right entries!");
+      console.log("ERROR: ", e);
+    },
+  });
+}
+
 function exportToServer() {
   var siteselected = $("#select-site").val();
   var testCaseSelected = $("#select-test-case").val();
@@ -629,14 +864,16 @@ function exportToServer() {
   var content = cm.getValue();
 
   var testStepRequestBody = {
-    stepName: testName,
-    testScript: content,
-    testCaseId: testCaseSelected,
-  };
-  var url =
-    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:8081/export";
 
-  ajaxPostTestStep(testStepRequestBody, url);
+    testName: testName,
+    emailAddressListId: testCaseSelected.split("sms:")[0],
+    smsAlertListId: testCaseSelected.split("sms:")[1],
+  };
+  groupId = testCaseSelected.split("sms:")[2];
+  var url =
+    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/testcases";
+  ajaxPostTestStep(testStepRequestBody, url, content);
+
 
   $("#generateToScriptsDialog").dialog("close");
 }
@@ -647,12 +884,10 @@ function createSite() {
 
   var testSiteRequest = {
     siteName: inputSiteName,
-    description: "sd",
     siteUrl: inputSiteUrl,
-    siteTimeZone: "africa",
   };
   var url =
-    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/sites";
+    "http://ec2-18-216-198-217.us-east-2.compute.amazonaws.com:8081/site";
 
   ajaxPostTestStep(testSiteRequest, url);
 
@@ -683,15 +918,19 @@ $(function () {
 // DK, block for populating Save and close button on site, test case, and step name div
 // DK, saving Group test to server
 function createGroupTest() {
+
+  var grouptestSelectSite = $("#grouptest-select-site").val();
+  var inputGrouptestName = $("#input-grouptest-name").val();
+
   var testGroupRequest = {
-    testName: $("#input-grouptest-name").val(),
-    emailAddressListId: siteName.split("sms:")[0],
-    smsAlertListId: siteName.split("sms:")[1],
+    siteId: grouptestSelectSite,
+    name: inputGrouptestName,
   };
   var url =
-    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/groupTestCase";
+    "http://ec2-18-216-198-217.us-east-2.compute.amazonaws.com:8081/groupTestCase";
 
-  ajaxPostTestStep(JSON.stringify(testGroupRequest), url);
+  ajaxPostTestStep(testGroupRequest, url);
+
   // $("#generateToScriptsDialog").dialog("close");
 }
 
@@ -703,7 +942,8 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      Save: createGroupTest,
+      "Save ": exportToServer,
+
       Close: function () {
         $("#generateToScriptsDialog").dialog("close");
         $(this).dialog("close");
@@ -715,7 +955,33 @@ $(function () {
       // _gaq.push(['_trackEvent', 'app', 'export-' + $("#select-script-language-id").val()]);
     },
   });
+
 });
+
+//Authentication Dailouge
+
+$(function () {
+  var dialog = $("#360-loginForm");
+  dialog.dialog({
+    autoOpen: false,
+    modal: true,
+    height: 300,
+    width: "50%",
+    buttons: {
+      "Sign in ": userSignIn,
+      Close: function () {
+        $("#360-loginForm").dialog("close");
+        $(this).dialog("close");
+      },
+    },
+  });
+  dialog.dialog({
+    close: function () {
+      // _gaq.push(['_trackEvent', 'app', 'export-' + $("#select-script-language-id").val()]);
+    },
+  });
+});
+
 // site create dialogue function
 $(function () {
   var dialog = $("#generateSiteDialogue");
@@ -725,8 +991,8 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      Save: createGroupTest,
-      // "Save ": createSite,
+      "Save ": createSite,
+
       Close: function () {
         // $( "#generateToScriptsDialog" ).dialog("close");
         $(this).dialog("close");
@@ -749,7 +1015,8 @@ $(function () {
     height: 600,
     width: "90%",
     buttons: {
-      Save: createGroupTest,
+      "Save ": createGroupTest,
+
       Close: function () {
         // $( "#generateToScriptsDialog" ).dialog("close");
         $(this).dialog("close");
@@ -907,7 +1174,7 @@ function loadScripts() {
       script.src = scriptNames[i];
       script.async = false; // This is required for synchronous execution
       script.onload = function () {
-        userSignIn();
+
         j++;
       };
       document.head.appendChild(script);
@@ -995,13 +1262,10 @@ $(function () {
 
 // DK experiemental code block
 function fetchSites() {
+  $("#360-auth-postResultDiv").html("");
   $("#txt-script-id").hide();
   $("#select-script-language-id").hide();
   //.dailogue is a custome method
-  var theDialog = $("#generateToProjectDialogue").dialog();
-  theDialog.dialog("open");
-
-  //$("#generateToProjectDialogue").dialog("open");
   let siteDropdown = $("#select-site");
 
   siteDropdown.empty();
@@ -1024,6 +1288,10 @@ function fetchSites() {
     url,
     beforeSend: setRequestHeader,
     success: function (data) {
+
+      var theDialog = $("#generateToProjectDialogue").dialog();
+      theDialog.dialog("open");
+
       $.each(data.payload.siteList, function (key, entry) {
         siteDropdown.append(
           $(
@@ -1043,7 +1311,6 @@ function fetchSites() {
     },
   });
 }
-
 // DK experiemental code block
 function fetchSitesForGroupTest() {
   //$("#generateToProjectDialogue").dialog("open");
@@ -1052,8 +1319,7 @@ function fetchSitesForGroupTest() {
   siteDropdown.append('<option selected="true" disabled>Choose Site</option>');
   siteDropdown.prop("selectedIndex", 0);
 
-  const url =
-    "http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/sites";
+  const url ="http://ec2-18-116-115-34.us-east-2.compute.amazonaws.com:7080/api/v1/sites";
 
   // Populate dropdown with list of provinces
   $.getJSON(url, function (data) {
@@ -1094,13 +1360,10 @@ function openTestGroupDailogue() {
   inputGrouptestName.empty();
 }
 // Module Drop down
-$("#select-site").change(function (e) {
-  siteName = $("#select-site :selected").val();
-  let testCaseDropDown = $("#select-test-case");
 
-  $("#select-test-case").change(function (e) {
-    siteName = $("#select-test-case :selected").val();
-  });
+$("#select-site").change(function () {
+  var siteId = $("#select-site").val();
+  let testCaseDropDown = $("#select-test-case");
 
   $("#select-test-case")
     .empty()
@@ -1111,7 +1374,7 @@ $("#select-site").change(function (e) {
         sortBy: "",
         sortDirection: "",
         searchParams: {
-          projectName: siteName,
+          projectName: "",
           testCaseName: "",
           emailList: "",
           smsListName: "",
@@ -1139,7 +1402,11 @@ $("#select-site").change(function (e) {
               $("<option>Choose group</option>")
                 .attr(
                   "value",
-                  entry.emailAddressListId + "sms:" + entry.smsAlertListId
+                  entry.emailAddressListId +
+                    "sms:" +
+                    entry.smsAlertListId +
+                    "sms:" +
+                    entry.siteGroupId
                 )
                 .text(entry.siteGroupName)
             );
@@ -1159,7 +1426,6 @@ function generateScripts(isExternalCapability, language, newFormatter) {
     cm.toTextArea();
   }
   $textarea.data("cm", null);
-  $("#generateToScriptsDialog").dialog("open");
 
   if (isExternalCapability) {
     var option = $("#" + language);
@@ -1760,18 +2026,19 @@ $(function () {
 });
 
 function refreshStatusBar() {
-  userSignIn();
+
   $.ajax({
     url: testOpsUrls.getUserInfo,
     type: "GET",
     success: function (data) {
-      console.log(data);
+
       if (data.email) {
         showBackupEnabledStatus();
       } else {
         showBackupDisabledStatus();
       }
     },
+
     error: function (err) {
       console.log(err);
       showBackupDisabledStatus();
